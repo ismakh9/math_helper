@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your trusty Math Solver</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- KaTeX for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <!-- Marked for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .math-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Markdown Styles */
+        .prose h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; color: #1f2937; }
+        .prose h2 { font-size: 1.25rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #374151; }
+        .prose p { margin-bottom: 1rem; line-height: 1.7; color: #4b5563; }
+        .prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .prose li { margin-bottom: 0.5rem; }
+        .prose strong { font-weight: 700; color: #111827; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a0a0a0; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8">
+
+    <!-- ACCESS GATE -->
+    <div id="accessScreen" class="fixed inset-0 flex items-center justify-center bg-gray-900/80 z-50">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md border border-gray-200">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2 text-center">Algebra Class Access</h2>
+            <p class="text-sm text-gray-600 mb-4 text-center">
+                Enter the access code to use this Math Solver.
+            </p>
+            <label for="accessCodeInput" class="block text-sm font-medium text-gray-700 mb-1">
+                Access Code
+            </label>
+            <input
+                id="accessCodeInput"
+                type="password"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all mb-2"
+                placeholder="Enter code"
+            />
+            <p id="accessError" class="mt-1 text-sm text-red-600 hidden">
+                Incorrect code. Please try again.
+            </p>
+            <button
+                id="accessBtn"
+                class="mt-4 w-full inline-flex justify-center items-center px-4 py-2 rounded-xl text-white text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+            >
+                Enter
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN APP (HIDDEN UNTIL CODE IS CORRECT) -->
+    <div id="appContainer" class="hidden w-full flex flex-col items-center">
+        <!-- Main Container -->
+        <div class="w-full max-w-3xl bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+            
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-8 text-white">
+                <h1 class="text-3xl font-extrabold tracking-tight">Your Math Solver</h1>
+                <p class="mt-2 text-indigo-100 opacity-90">Enter any equation or math problem below. I'll solve it step-by-step.</p>
+            </div>
+
+            <!-- Input Section -->
+            <div class="p-8 border-b border-gray-100">
+                <div class="relative">
+                    <label for="mathInput" class="block text-sm font-medium text-gray-700 mb-2">Your Problem</label>
+                    <textarea 
+                        id="mathInput" 
+                        rows="3" 
+                        class="math-font w-full p-4 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm resize-none text-lg"
+                        placeholder="e.g., Integral of x^2 * sin(x) dx   OR   Solve for x: 3x^2 + 2x - 5 = 0"
+                    ></textarea>
+                    <div class="absolute bottom-3 right-3 text-gray-400 text-xs">Shift + Enter for new line</div>
+                </div>
+
+                <div class="mt-4 flex justify-end">
+                    <button 
+                        id="solveBtn" 
+                        class="flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-lg transform active:scale-95"
+                    >
+                        <span id="btnText">Solve Problem</span>
+                        <svg id="btnIcon" class="ml-2 -mr-1 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                        
+                        <!-- Loading Spinner -->
+                        <svg id="btnSpinner" class="hidden ml-2 -mr-1 w-5 h-5 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Output Section -->
+            <div id="outputContainer" class="hidden bg-gray-50 p-8 min-h-[200px]">
+                <div class="flex items-center mb-6">
+                    <div class="bg-green-100 text-green-800 p-2 rounded-lg mr-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-800">Solution</h2>
+                </div>
+                
+                <!-- The Actual Content -->
+                <div id="solutionContent" class="prose max-w-none text-gray-800">
+                    <!-- Content injected here -->
+                </div>
+            </div>
+            
+            <!-- Error Section -->
+            <div id="errorContainer" class="hidden bg-red-50 p-6 border-t border-red-100">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                  clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">There was an error solving your problem</h3>
+                        <div class="mt-2 text-sm text-red-700" id="errorMessage"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <footer class="mt-8 text-center text-gray-400 text-sm">
+            <p>Created by Khalid</p>
+        </footer>
+    </div>
+
+    <script>
+        const apiKey = "AIzaSyD8sELyBeT-sUWbzgr8Nlxc4At4IHTMgUY"; // Provided by environment
+
+        // --- ACCESS GATE ELEMENTS ---
+        const accessScreen = document.getElementById('accessScreen');
+        const appContainer = document.getElementById('appContainer');
+        const accessCodeInput = document.getElementById('accessCodeInput');
+        const accessBtn = document.getElementById('accessBtn');
+        const accessError = document.getElementById('accessError');
+        const ACCESS_CODE = "algebraclass";
+
+        function checkAccess() {
+            const code = accessCodeInput.value.trim();
+
+            if (code === ACCESS_CODE) {
+                // Hide gate, show app
+                accessScreen.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                accessError.classList.add('hidden');
+                accessCodeInput.classList.remove('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+
+                // Focus on math input when unlocked
+                const mathInput = document.getElementById('mathInput');
+                if (mathInput) mathInput.focus();
+            } else {
+                // Show error styling
+                accessError.classList.remove('hidden');
+                accessCodeInput.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+            }
+        }
+
+        accessBtn.addEventListener('click', checkAccess);
+        accessCodeInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                checkAccess();
+            }
+        });
+
+        // --- MAIN APP ELEMENTS ---
+        const mathInput = document.getElementById('mathInput');
+        const solveBtn = document.getElementById('solveBtn');
+        const btnText = document.getElementById('btnText');
+        const btnIcon = document.getElementById('btnIcon');
+        const btnSpinner = document.getElementById('btnSpinner');
+        const outputContainer = document.getElementById('outputContainer');
+        const solutionContent = document.getElementById('solutionContent');
+        const errorContainer = document.getElementById('errorContainer');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // --- UI State Management ---
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                solveBtn.disabled = true;
+                solveBtn.classList.add('opacity-75', 'cursor-not-allowed');
+                btnText.textContent = "Solving...";
+                btnIcon.classList.add('hidden');
+                btnSpinner.classList.remove('hidden');
+                outputContainer.classList.add('hidden');
+                errorContainer.classList.add('hidden');
+            } else {
+                solveBtn.disabled = false;
+                solveBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                btnText.textContent = "Solve Problem";
+                btnIcon.classList.remove('hidden');
+                btnSpinner.classList.add('hidden');
+            }
+        }
+
+        function displayError(msg) {
+            errorContainer.classList.remove('hidden');
+            errorMessage.textContent = msg;
+            setLoading(false);
+        }
+
+        function renderSolution(markdownText) {
+            outputContainer.classList.remove('hidden');
+            
+            // 1. Convert Markdown to HTML
+            const rawHtml = marked.parse(markdownText);
+            
+            // 2. Inject HTML
+            solutionContent.innerHTML = rawHtml;
+
+            // 3. Render Math using KaTeX auto-renderer
+            renderMathInElement(solutionContent, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false,
+                errorColor: '#cc0000',
+                strict: false
+            });
+            
+            // Scroll to solution
+            outputContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // --- API Interaction ---
+
+        async function solveMath() {
+            const query = mathInput.value.trim();
+            
+            if (!query) {
+                displayError("Please enter a math problem first.");
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                const systemPrompt = `
+                You are an expert Math Tutor and Solver. 
+                1. Solve the user's math problem step-by-step.
+                2. Use **Markdown** for text formatting (bold, lists, etc.).
+                3. Use **LaTeX** for ALL mathematical expressions.
+                4. CRITICAL: Enclose block/display math in double dollar signs: $$ ... $$
+                5. CRITICAL: Enclose inline math in single dollar signs: $ ... $
+                6. Be clear, concise, and accurate. Verify your steps.
+                7. If the request is not math-related, politely refuse.
+                `;
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: query }]
+                        }],
+                        systemInstruction: {
+                            parts: [{ text: systemPrompt }]
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates.length > 0) {
+                    const resultText = data.candidates[0].content.parts[0].text;
+                    renderSolution(resultText);
+                    setLoading(false);
+                } else {
+                    throw new Error("No solution generated by the AI.");
+                }
+
+            } catch (error) {
+                console.error("Error:", error);
+                displayError("Failed to connect to the solver. Please try again shortly.");
+            }
+        }
+
+        // --- Event Listeners ---
+
+        if (solveBtn) {
+            solveBtn.addEventListener('click', solveMath);
+        }
+
+        if (mathInput) {
+            mathInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    solveMath();
+                }
+            });
+        }
+
+        // Note: We only focus mathInput AFTER access is granted (inside checkAccess)
+    </script>
+</body>
+</html>
